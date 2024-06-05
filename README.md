@@ -1,5 +1,7 @@
 # Satvis
 
+Opensource real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,
+
 to open in local server
 - Clone the repository
 - Install all npm dependency in node.js
@@ -8,4 +10,3 @@ to open in local server
 bash$ node index.js
 ```
 
-Opensource real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,

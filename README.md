@@ -1,6 +1,6 @@
 # Satvis
 
-Opensource real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,
+Open source real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,
 
 to open in local server
 - Clone the repository

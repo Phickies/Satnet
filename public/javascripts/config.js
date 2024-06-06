@@ -2,10 +2,11 @@
  * Configuration for objects
  */
 export const environmentConfig = {
+    fogEnable: false,
     fogColor: 0x000000,
 
     panControllerDampingFactor: 0.04,
-    zoomControllerDampingFactor: 1.4,
+    zoomControllerDampingFactor: 1.5,
 }
 
 
@@ -27,7 +28,7 @@ export const globalConfig = {
     earthLightEmissiveColor: 0x9D872C,
     earthPerigee: 16000,
     earthApogee: 16000,
-    earthEccentricity: 0.3,
+    earthEccentricity: 0.15,
     earthInclination: 90,
     earthPeriod: 8760,
 

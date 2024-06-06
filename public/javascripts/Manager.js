@@ -42,7 +42,7 @@ const windowSize = {
 const aspect = windowSize.width / windowSize.height;
 const scene = new THREE.Scene();
 const fog = new THREE.Fog(environmentConfig.fogColor);
-const camera = new THREE.PerspectiveCamera(30, aspect, 0.1, 40000);
+const camera = new THREE.PerspectiveCamera(30, aspect, 0.1, 1000000);
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('canvas.webgl'),
     antialias: true,
@@ -173,7 +173,10 @@ export function setup() {
 
 
     scene.background = backgroundTexture;
-    scene.fog = fog;
+    if (environmentConfig.fogEnable) {
+        scene.fogEnable = true;
+        scene.fog = fog;
+    }
     scene.add(camera);
     scene.add(gridHelper);
 

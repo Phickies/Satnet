@@ -1,4 +1,4 @@
-import * as visualisatioin from "./Manager";
+import * as visualisation from "./Manager";
 
-visualisatioin.setup();
-visualisatioin.loop();
+visualisation.setup();
+visualisation.loop();

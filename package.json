@@ -4,13 +4,15 @@
   "description": "Application for Interactive Visulization of satellite through years",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build"
   },
   "author": "Phicks (Tran Quy An)",
   "license": "MIT",
   "dependencies": {
     "express": "^4.19.2",
     "three": "^0.165.0",
+    "troika-three-text": "^0.49.1",
     "vite-express": "^0.16.0"
   },
   "devDependencies": {

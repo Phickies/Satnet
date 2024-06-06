@@ -12,33 +12,38 @@ export const environmentConfig = {
 
 export const globalConfig = {
 
-    sunSize: 135,
+    
+    sunSize: 2.181,
     earthSize: 10,
     moonSize: 2.5,
-
+    realworldScaleFactor: 10/6371,
+    
     sunTiltAngle: 0,
     sunLightColor: 0xffffff,
-    sunEmissiveColor: 0xffe600,
-    sunSpecColor: 0xf5e000,
-    sunIntensive: 1.5,
+    sunEmissiveColor: 0xffffbb,
+    sunSpecColor: 0xffffaa,
+    sunIntensive: 1.75,
+    bloomThreshold: .9,
+    bloomStrength: 2,
+    bloomRadius: .1,
 
 
     earthTiltAngle: 23.5 * Math.PI / 180,
     earthCloudDensity: 0.1,
     earthLightEmissiveColor: 0x9D872C,
-    earthPerigee: 16000,
-    earthApogee: 16000,
-    earthEccentricity: 0.15,
-    earthInclination: 90,
-    earthPeriod: 8760,
+    earthPerigee: 147100,
+    earthApogee: 152100,
+    earthEccentricity: 0.0167,
+    earthInclination: 7.155,
+    earthPeriod: 525960,
 
 
-    moonTiltAngle: 0,
-    moonPerigee: 280,
-    moonApogee: 300,
-    moonEccentricity: 0.15,
-    moonInclination: 96,
-    moonPeriod: 69,
+    moonTiltAngle: 11.509 * Math.PI / 180,
+    moonPerigee: 402541.95,
+    moonApogee: 405000,
+    moonEccentricity: 0.0549,
+    moonInclination: 5.1,
+    moonPeriod: 39312,
 
 
     sunRotationSpeed: 0.4,
@@ -46,5 +51,5 @@ export const globalConfig = {
     cloudAnimationSpeed: 0.3,
     moonRotationSpeed: 0.1,
 
-    numSatellites: 4,
+    initNumSatellites: 7000,
 };

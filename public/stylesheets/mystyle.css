@@ -13,3 +13,14 @@ html, body{
     height: 100%;
     display: block;
 }
+
+.time-display {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.5); /* semi-transparent black background */
+  color: white;
+  font-family: Arial, sans-serif;
+}

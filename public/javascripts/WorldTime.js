@@ -10,14 +10,18 @@ export default class WorldTime {
     this.day = initDay;
     this.year = initYear;
     this.timeScale = timeScale;
+
     this.timeDisplay = new Text();
     this.timeDisplay.fontSize = 0.5;
     this.timeDisplay.position.set(0, 2, 0);
 
+    this.velocity = 0;
+    this.acceleration = 0;
   }
 
-  update(deltaTime) { // deltaTime is the time since the last frame in seconds
-    this.seconds += deltaTime * this.timeScale;
+
+  run(deltaTime) { // deltaTime is the time since the last frame in seconds
+    this.seconds += deltaTime;
 
     while (this.seconds >= 60) {
       this.seconds -= 60;
@@ -43,16 +47,19 @@ export default class WorldTime {
     }
   }
 
+
   daysInMonth(month, year) {
     return new Date(year, month, 0).getDate();
   }
+
 
   isLeapYear(year) {
     return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
   }
 
+
   getFormattedTime(includeDate = false) {
-    const formattedTime = `${this.hours.toString().padStart(2, '0')}:${this.minutes.toString().padStart(2, '0')}:${this.seconds.toFixed(2).padStart(5, '0')}`;
+    const formattedTime = `${this.hours.toString().padStart(2, '0')}:${this.minutes.toString().padStart(2, '0')}:${Math.floor(this.seconds).toString().padStart(2, '0')}`;
 
     if (includeDate) {
       return `${this.month}/${this.day}/${this.year} ${formattedTime}`;
@@ -60,6 +67,7 @@ export default class WorldTime {
       return formattedTime;
     }
   }
+
 
   setSpecificTime(newHours = 0, newMinutes = 0, newSeconds = 0, newMonth = 1, newDay = 1, newYear = 2024) {
     this.hours = newHours;
@@ -70,6 +78,33 @@ export default class WorldTime {
     this.year = newYear;
   }
 
-  displayOn(scene, camera) {
+
+  setCurrentTime() {
+    const now = new Date();
+    this.hours = now.getHours();
+    this.minutes = now.getMinutes();
+    this.seconds = now.getSeconds();
+    this.month = now.getMonth() + 1; // JavaScript months are 0-based
+    this.day = now.getDate();
+    this.year = now.getFullYear();
   }
+
+
+  setTimeScale(value) {
+    this.timeScale = value;
+  }
+
+  
+  update(deltaTime) {
+    this.velocity += this.acceleration;
+    this.acceleration = deltaTime.getDelta() * this.timeScale;
+    this.run(this.acceleration);
+  }
+
+
+  display() {
+    const timeElement = document.getElementById("time-text");
+    timeElement.textContent = this.getFormattedTime(true);
+  }
+
 }

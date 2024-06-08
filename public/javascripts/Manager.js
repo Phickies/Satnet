@@ -9,8 +9,14 @@ import Moon from "./Moon";
 import Sun from "./Sun"
 import Satellite from "./Satellite";
 import WorldTime from "./WorldTime";
+import LaunchSite from './LaunchBases.js';
 
-import { globalConfig, environmentConfig } from "./config";
+import {
+    cameraConfig,
+    uxConfig,
+    environmentConfig,
+    globalConfig
+} from "./config";
 
 
 // bloom pass
@@ -37,10 +43,8 @@ const backgroundTexture = loader.load("/images/background.jpg");
 
 
 // Declare variables
-let time = new THREE.Clock();
-let timeScale = 1;
+let deltaTime = new THREE.Clock();
 let currentNumSat = globalConfig.initNumSatellites;
-
 let offsetCameraVector = new THREE.Vector3();
 
 const windowSize = {
@@ -50,7 +54,11 @@ const windowSize = {
 const aspect = windowSize.width / windowSize.height;
 const scene = new THREE.Scene();
 const fog = new THREE.Fog(environmentConfig.fogColor);
-const camera = new THREE.PerspectiveCamera(30, aspect, 0.1, 1000000000);
+const camera = new THREE.PerspectiveCamera(
+    cameraConfig.cameraFOV, aspect,
+    cameraConfig.cameraNearLimitView,
+    cameraConfig.cameraFarLimitView
+);
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('canvas.webgl'),
     antialias: true,
@@ -59,27 +67,29 @@ const renderer = new THREE.WebGLRenderer({
 const panController = new OrbitControls(camera, renderer.domElement);
 const zoomController = new TrackballControls(camera, renderer.domElement);
 
-const gridHelper = new THREE.GridHelper(40000, 50);
-const panelWidth = 310;
+const gridHelper = new THREE.GridHelper(
+    environmentConfig.gridHelperWidth,
+    environmentConfig.gridHelperDensity
+);
+const panelWidth = uxConfig.menuPanelWidth;
 
 const sun = new Sun();
-const earth = new Earth(earthMapTexture, earthBumpTexture, earthEmissionTexture, earthReflectTextuure, cloudTexture, cloudTransTexture);
+const earth = new Earth(
+    earthMapTexture,
+    earthBumpTexture,
+    earthEmissionTexture,
+    earthReflectTextuure,
+    cloudTexture,
+    cloudTransTexture
+);
 const moon = new Moon(moonMapTexture, moonBumpTexture);
-const satellites = new Satellite(scene, currentNumSat);
-const worldTime = new WorldTime(0, 0, 0, 1, 1, 1981, timeScale);
+const satellites = new Satellite(scene);
+const worldTime = new WorldTime(0, 0, 0, 1, 1, 1981, 1);
+const launchBase = new LaunchSite(earth);
 
-
-// Declare constant variables
-const sunAxis = new THREE.Vector3(Math.sin(globalConfig.sunTiltAngle), Math.cos(globalConfig.sunTiltAngle), 0).normalize();
-const earthAxis = new THREE.Vector3(Math.sin(globalConfig.earthTiltAngle), Math.cos(globalConfig.earthTiltAngle), 0).normalize();
-const moonAxis = new THREE.Vector3(Math.sin(globalConfig.moonTiltAngle), Math.cos(globalConfig.moonTiltAngle), 0).normalize();
-
-// Variable for mouse select
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-
-// bloom pass
 const renderScene = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -88,32 +98,6 @@ const bloomPass = new UnrealBloomPass(
     0.85
 );
 const bloomComposer = new EffectComposer(renderer);
-
-
-
-window.addEventListener("click", function (event) {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = (event.clientY / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const intersects = raycaster.intersectObject([sun, earth, moon].filter(obj =>
-        obj.geometry && obj.geometry.boundingSphere
-    ));
-
-    console.log(intersects);
-
-    if (intersects.length > 0) {
-        const selectedObject = intersects[0].object;
-
-        control.target.copy(selectedObject.position);
-
-        // Adjust camera position for better framing
-        const distance = selectedObject.geometry.boundingSphere.radius * 2;
-        const newCameraPosition = selectedObject.position.clone().add(new THREE.Vector3(0, 0, distance));
-        camera.position.lerp(newCameraPosition, 0.5); // Smooth transition
-    }
-});
 
 
 function onWindowResize() {
@@ -129,6 +113,12 @@ function onWindowResize() {
 function setupBackground() {
     backgroundTexture.mapping = THREE.EquirectangularReflectionMapping;
     backgroundTexture.colorSpace = THREE.SRGBColorSpace;
+    scene.background = backgroundTexture;
+
+    if (environmentConfig.fogEnable) {
+        scene.fogEnable = true;
+        scene.fog = fog;
+    }
 }
 
 
@@ -139,8 +129,8 @@ function setupRenderer() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 }
 
+
 function setupBloom() {
-    //bloom renderer
     bloomPass.threshold = globalConfig.bloomThreshold;
     bloomPass.strength = globalConfig.bloomStrength;
     bloomPass.radius = globalConfig.bloomRadius;
@@ -151,9 +141,28 @@ function setupBloom() {
 }
 
 
+function setupCameraControll() {
+    camera.position.set(
+        cameraConfig.camearInitPosition.x,
+        cameraConfig.camearInitPosition.y,
+        cameraConfig.camearInitPosition.z
+    );
+    camera.layers.enableAll();
+    camera.layers.disable(3);
+
+    panController.target = earth.position;
+    panController.enableDamping = true;
+    panController.dampingFactor = environmentConfig.panControllerDampingFactor;
+    panController.enableZoom = false;
+
+    zoomController.noPan = true;
+    zoomController.noRotate = true;
+    zoomController.noZoom = false;
+    zoomController.zoomSpeed = environmentConfig.zoomControllerDampingFactor;
+}
+
 
 function createGUI() {
-
     const gui = new GUI({ width: panelWidth });
     const satelliteMenu = gui.addFolder("Satellite debug");
     const timeSpeedMenu = gui.addFolder("Time Controll");
@@ -161,7 +170,7 @@ function createGUI() {
 
     const settings = {
         "number of Satellite": 20,
-        "modify time speed": 1.0,
+        "modify time speed": 0.0,
         "toggle Sun": function () {
 
             camera.layers.toggle(0);
@@ -185,19 +194,28 @@ function createGUI() {
         "toggle Satellites": function () {
 
             camera.layers.toggle(4);
-            
+
+        },
+        "toggle Launch Bases": function () {
+
+            camera.layers.toggle(5);
         }
     }
 
-    satelliteMenu.add(settings, "number of Satellite", 0, 7000, 1).onChange(modifyNumSat);
+    satelliteMenu.add(settings, "number of Satellite", 0, 7000, 1)
+        .onChange(modifyNumSat);
 
-    timeSpeedMenu.add(settings, "modify time speed", -8000000, 8000000, 1000000).onChange(modifyTimeScale);
+    timeSpeedMenu.add(settings, "modify time speed",
+        uxConfig.minTimeScale, uxConfig.maxTimeScale, uxConfig.timeScaleStep)
+        .onChange(value => worldTime.setTimeScale(value));
 
     layerFilterMenu.add(settings, "toggle Sun");
     layerFilterMenu.add(settings, "toggle Planets");
     layerFilterMenu.add(settings, "toggle Earth");
     layerFilterMenu.add(settings, "toggle Debug/Helper");
     layerFilterMenu.add(settings, "toggle Satellites");
+    layerFilterMenu.add(settings, "toggle Launch Bases");
+
 
     satelliteMenu.open();
     timeSpeedMenu.open();
@@ -214,35 +232,16 @@ function modifyNumSat(maxSatellites) {
 }
 
 
-function modifyTimeScale(speed) {
-    timeScale = speed;
-}
-
-
 export function setup() {
 
+    deltaTime.start();
     setupBackground();
-
-    camera.position.set(30, 24, -60);
-    camera.layers.enableAll();
-    camera.layers.disable(3);
-
-    panController.target = earth.position;
-    panController.enableDamping = true;
-    panController.dampingFactor = environmentConfig.panControllerDampingFactor;
-    panController.enableZoom = false;
-
-    zoomController.noPan = true;
-    zoomController.noRotate = true;
-    zoomController.noZoom = false;
-    zoomController.zoomSpeed = environmentConfig.zoomControllerDampingFactor;
+    setupCameraControll();
+    setupRenderer();
+    setupBloom();
+    createGUI();
 
 
-    scene.background = backgroundTexture;
-    if (environmentConfig.fogEnable) {
-        scene.fogEnable = true;
-        scene.fog = fog;
-    }
     scene.add(camera);
     scene.add(gridHelper);
 
@@ -251,56 +250,27 @@ export function setup() {
     sun.displayOn(scene);
     earth.displayOn(scene);
     moon.displayOn(scene);
-    worldTime.displayOn(scene);
 
-    setupRenderer();
-    createGUI();
-
-    // setup the bloom pass
-    setupBloom()
 
     // Resize handler
     window.addEventListener('resize', onWindowResize, false);
-
-    time.start();
-
 }
 
 
 export function loop() {
 
-    let deltaTime = time.getDelta() * timeScale;
-    let elapsedTime = time.elapsedTime;
+    // Update world Time
     worldTime.update(deltaTime);
-    // console.log(worldTime.getFormattedTime(true));
-
-    offsetCameraVector.subVectors(camera.position, earth.position);
-
-    sun.setRotation(sunAxis, deltaTime);
-    earth.setRotation(earthAxis, deltaTime);
-    moon.setRotation(moonAxis, deltaTime);
+    worldTime.display();
 
     // Update orbit motion
-    moon.orbit(earth,
-        globalConfig.moonPerigee * globalConfig.realworldScaleFactor,
-        globalConfig.moonApogee * globalConfig.realworldScaleFactor,
-        globalConfig.moonEccentricity,
-        globalConfig.moonInclination,
-        -globalConfig.moonPeriod / timeScale,
-        elapsedTime * timeScale
-    );
-    sun.orbit(earth,
-        globalConfig.earthPerigee * globalConfig.realworldScaleFactor,
-        globalConfig.earthApogee * globalConfig.realworldScaleFactor,
-        globalConfig.earthEccentricity,
-        globalConfig.earthInclination,
-        -globalConfig.earthPeriod / timeScale,
-        elapsedTime * timeScale
-    );
-
-    satellites.updateSatellites(elapsedTime * timeScale, earth);
+    moon.update(earth, worldTime);
+    earth.update(null, worldTime);
+    sun.update(earth, worldTime);
+    satellites.update(earth, worldTime);
 
     // Update OrbitControls target based on currentTarget
+    offsetCameraVector.subVectors(camera.position, earth.position);
     panController.object.position.copy(earth.position).add(offsetCameraVector);
     panController.target.copy(earth.position);
     zoomController.target = panController.target;

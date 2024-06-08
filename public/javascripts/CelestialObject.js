@@ -13,7 +13,7 @@ export default class CelestialObject extends Object3D {
      * @param {int} layer Meta layer for display
      * @param {float} rotationSpeed Rotation speed
      */
-    constructor(geometry, material, name, layer, rotationSpeed, castShadow = true, receiveShadow = true) {
+    constructor(geometry, material, name, layer, rotationSpeed, tiltAngle, castShadow = true, receiveShadow = true) {
         super();
         const object = new Mesh(geometry, material);
         object.layers.set(layer);
@@ -22,6 +22,7 @@ export default class CelestialObject extends Object3D {
         this.castShadow = castShadow;
         this.receiveShadow = receiveShadow;
         this.rotationSpeed = rotationSpeed;
+        this.axis = this.calculateRotationAxis(tiltAngle);
     }
 
 
@@ -39,6 +40,16 @@ export default class CelestialObject extends Object3D {
 
     displayOn(scene) {
         scene.add(this);
+    }
+
+
+    /***
+     * Calculate the rotation axis based on tilt angle of the celestial
+     * @param {float} celetsialTitlAngle in radian
+     * @return {THREE.Vector3} rotation Axis
+     */
+    calculateRotationAxis(celetsialTitlAngle) {
+        return new Vector3(Math.sin(celetsialTitlAngle), Math.cos(celetsialTitlAngle), 0).normalize();
     }
 
 
@@ -63,42 +74,44 @@ export default class CelestialObject extends Object3D {
      * @param {float} time real time, based on time dimention in space. You can pass in your in-application time, elapesedTime or DeltaTime.
      */
     orbit(origin, perigee, apogee, eccentricity, inclination, period, time) {
-        // Convert degrees to radians
-        inclination = MathUtils.degToRad(inclination);
-
-        // Semi-major axis
-        const a = (perigee + apogee) / 2;
-
-        // Mean motion
-        const n = 2 * Math.PI / period;
-
-        // Mean anomaly
-        const M = n * time;
-
-        // Solve Kepler's equation for eccentric anomaly
-        let E = M;
-        for (let i = 0; i < 10; i++) {
-            E = M + eccentricity * Math.sin(E);
+        if (origin != null) {
+            // Convert degrees to radians
+            inclination = MathUtils.degToRad(inclination + 90);
+    
+            // Semi-major axis
+            const a = (perigee + apogee) / 2;
+    
+            // Mean motion
+            const n = 2 * Math.PI / -period;
+    
+            // Mean anomaly
+            const M = n * time;
+    
+            // Solve Kepler's equation for eccentric anomaly
+            let E = M;
+            for (let i = 0; i < 10; i++) {
+                E = M + eccentricity * Math.sin(E);
+            }
+    
+            // True anomaly
+            const v = 2 * Math.atan(Math.sqrt((1 + eccentricity) / (1 - eccentricity)) * Math.tan(E / 2));
+    
+            // Distance
+            const r = a * (1 - eccentricity * Math.cos(E));
+    
+            // Position in orbital plane
+            const x = r * Math.cos(v);
+            const y = r * Math.sin(v);
+    
+            // Rotate to take into account inclination
+            const X = x;
+            const Y = y * Math.cos(inclination);
+            const Z = y * Math.sin(inclination);
+    
+            // Add origin
+            const position = new Vector3(X, Y, Z).add(origin.position);
+    
+            this.position.copy(position);
         }
-
-        // True anomaly
-        const v = 2 * Math.atan(Math.sqrt((1 + eccentricity) / (1 - eccentricity)) * Math.tan(E / 2));
-
-        // Distance
-        const r = a * (1 - eccentricity * Math.cos(E));
-
-        // Position in orbital plane
-        const x = r * Math.cos(v);
-        const y = r * Math.sin(v);
-
-        // Rotate to take into account inclination
-        const X = x;
-        const Y = y * Math.cos(inclination);
-        const Z = y * Math.sin(inclination);
-
-        // Add origin
-        const position = new Vector3(X, Y, Z).add(origin.position);
-
-        this.position.copy(position);
     }
 }

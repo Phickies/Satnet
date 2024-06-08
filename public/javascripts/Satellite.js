@@ -1,13 +1,13 @@
-import { BufferGeometry, MeshBasicMaterial, Points, MathUtils, Vector3, Float32BufferAttribute, PointsMaterial, TextureLoader } from 'three';
+import { BufferGeometry, Points, Float32BufferAttribute, PointsMaterial } from 'three';
 import { globalConfig } from './config.js';
+import orbit from './orbitEquation.js';
 
 export default class Satellite {
-    constructor(scene, maxSatellites) {
+    constructor(scene) {
         this.scene = scene;
         this.satellites = [];
-        this.maxSatellites = maxSatellites;
+        this.maxSatellites = globalConfig.initNumSatellites;
         this.loadSatelliteData().then(this.createSatelliteObjects.bind(this));
-        const layer = 4;
     }
 
     async loadSatelliteData() {
@@ -24,133 +24,108 @@ export default class Satellite {
     parseTSV(data, maxEntries) {
         const lines = data.split('\n');
         const headers = lines.shift().split('\t');
-    
+        const columnsToFilter = ['Period'];
+
+        // Parse the number value from string into number
         function toNumberIfNumeric(value) {
             return isNaN(value) ? value : Number(value);
         }
-    
-        return lines.slice(0, maxEntries).map(line => {
-            const bits = line.split('\t');
-            // Create object with a random initial phase for orbital calculations
-            let obj = { initPhase: 2 * Math.PI * Math.random() };  // Assign random initial phase
-            headers.forEach((header, index) => {
-                obj[header] = toNumberIfNumeric(bits[index].trim());  // Trim spaces and convert to number if applicable
+
+        return lines.slice(0, maxEntries)
+            .map(line => {
+                const bits = line.split('\t');
+
+                // Create object with a random initial phase for orbital calculations
+                let obj = { initPhase: 2 * Math.PI * Math.random() };  // Assign random initial phase
+
+                headers.forEach((header, index) => {
+                    obj[header] = toNumberIfNumeric(bits[index].trim());  // Trim spaces and convert to number if applicable
+                });
+                return obj;
+            })
+            .filter(obj => {
+                return !columnsToFilter.some(col => obj[col] === null || isNaN(obj[col]));
             });
-            return obj;
-        });
     }
-    
-    
+
+
     createSatelliteObjects() {
         const vertices = [];
         const colors = [];
         this.satellites.forEach(sat => {
             // You can adjust the position and color values based on your satellite data
             vertices.push(0, 0, 0);  // Placeholder for actual satellite positions
-            // if first three letters are CIV, color is blue
-            // com is green
-            // gov is red
-            // mil is yellow
-            // rest is white
-            // Determine color based on the satellite's name prefix
-            const prefix = sat.Users.substring(0, 3).toLowerCase(); // Use lower case for case insensitive comparison
-            if (prefix === "civ") {
-                colors.push(0, 0, 1); // Blue
-            } else if (prefix === "com") {
-                colors.push(0, 1, 0); // Green
-            } else if (prefix === "gov") {
-                colors.push(1, 0, 0); // Red
-            } else if (prefix === "mil") {
-                colors.push(1, 1, 0); // Yellow
-            } else {
-                colors.push(1, 1, 1); // White
+            /***
+             * CIV means civil is BLUE
+             * COM means commercial is CYAN
+             * GOV means goverment is RED
+             * MIL means military is YELLOW
+             * the rest is white
+             */
+            const prefix = sat.Users.substring(0, 3).toLowerCase();
+            switch (prefix) {
+                case "civ":
+                    colors.push(0, 1, 1); // Blue
+                    break;
+                case "com":
+                    colors.push(0, 1, 0); // Green
+                    break;
+                case "gov":
+                    colors.push(1, 0, 0 ); // Red
+                    break;
+                case "mil":
+                    colors.push(1, 1, 0); // Yellow
+                    break;
+                default:
+                    colors.push(1, 1, 1); // White
+                    break;
             }
         });
+        
 
         const geometry = new BufferGeometry();
         geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
         geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
-        
+
         const material = new PointsMaterial({
-            size: 1,
+            size: 0.2,
             sizeAttenuation: true,
-            vertexColors: true, 
-            // color: 0xff0000 
+            vertexColors: true,
         });
 
-        const points = new Points(geometry, material);
-        this.scene.add(points);
+        const statelliteGroup = new Points(geometry, material);
+        statelliteGroup.layers.set(4);
+        this.scene.add(statelliteGroup);
 
         // Store reference to points mesh in satellite data
         this.satellites.forEach((sat, index) => {
-            sat.mesh = points;  // All satellites share the same geometry but could be controlled individually if needed
+            sat.mesh = statelliteGroup;  // All satellites share the same geometry but could be controlled individually if needed
         });
     }
 
-    updateSatellites(time, origin) {
-        let index=0;
+
+    update(origin, worldTime) {
+        let index = 0;
         const positions = this.satellites.flatMap(sat => {
             index++;
-            const newPosition = this.orbit(
+            const newPosition = orbit(
                 origin.position,
                 sat.Perigee,
                 sat.Apogee,
                 sat.Eccentricity,
-                sat.Inclination,
-                -sat.Period,
-                time,
+                sat.Inclination + 90,
+                -sat.Period * 60,
+                worldTime.velocity,
                 sat.initPhase
             );
             return newPosition.toArray().map(coord => isNaN(coord) ? 0 : coord); // Replace NaN with 0 or some default value
         }).flat();  // Flatten the array of arrays to a single array
-    
+
 
         const positionAttribute = this.satellites[0]?.mesh?.geometry?.attributes.position;
         if (positionAttribute) {
             positionAttribute.array = new Float32Array(positions);
             positionAttribute.needsUpdate = true;
-        } 
-    }
-
-    orbit(origin, perigee, apogee, eccentricity, inclination, period, time, initialPhase) {
-        // Convert inclination from degrees to radians
-        inclination = MathUtils.degToRad(inclination);
-        
-
-        // Calculate semi-major axis and mean motion
-        const a = (perigee + apogee) / 2;
-        const n = 2 * Math.PI / period;
-    
-        // Calculate the mean anomaly
-        let M = n * time + initialPhase;
-    
-        // Solve Kepler's Equation using Newton's method for the eccentric anomaly
-        let E = M;
-        let delta;
-        for (let i = 0; i < 10; i++) {
-            delta = E - eccentricity * Math.sin(E) - M;
-            if (Math.abs(delta) < 1e-6) break;  // Convergence check
-            E -= delta / (1 - eccentricity * Math.cos(E));
         }
-    
-        // Calculate the true anomaly
-        const v = 2 * Math.atan(Math.sqrt((1 + eccentricity) / (1 - eccentricity)) * Math.tan(E / 2));
-    
-        // Calculate the distance from the focal point
-        const r = a * (1 - eccentricity * Math.cos(E));
-    
-        // Calculate Cartesian coordinates in the orbital plane
-        const X = r * Math.cos(v);
-        const Y = r * Math.sin(v) * Math.cos(inclination);
-        const Z = r * Math.sin(v) * Math.sin(inclination);
-    
-        // Apply scale factor and adjust position relative to the origin
-        return new Vector3(
-            X * globalConfig.realworldScaleFactor * 25 + origin.x,
-            Y * globalConfig.realworldScaleFactor * 25 + origin.y,
-            Z * globalConfig.realworldScaleFactor * 25 + origin.z
-        );
     }
-    
-    
 }

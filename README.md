@@ -1,12 +1,10 @@
 # Satvis
 
+[satnet.matthassing.nl]
+
 Open source real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,
 
-to open in local server
-- Clone the repository
-- Install all npm dependency in node.js
-- Run command
-```
-bash$ node index.js
-```
+You can download the source code file and run it from localhost using VS Code live-server
 
+
+Thank you Matt for your support and working with me on this project.

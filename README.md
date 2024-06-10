@@ -2,7 +2,8 @@
 
 [Demo Website](http://satnet.matthassing.nl)
 
-Open source real-time interactive satellite database website. Build and running on Three.js framework
+Goal:
+Create an open source real-time interactive satellite database website for scienctify research, study, visulization and managing data about space.
 
 You can download the source code file and run it from localhost using VS Code live-server
 

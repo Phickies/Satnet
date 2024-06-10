@@ -10,7 +10,7 @@ You can download the source code file and run it from localhost using VS Code li
 
 Thank you Matt for your support and working with me on this project.
 
-Panning on improve:
+## Panning on improve:
 - Fix the satellite orbit equation.
 - Make the earth rotate around the sun.
 - Add tool tips.

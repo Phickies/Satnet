@@ -1,6 +1,6 @@
 # Satvis
 
-[Demo Website](satnet.matthassing.nl)
+[Demo Website](http://satnet.matthassing.nl)
 
 Open source real-time interactive satellite database website. Build and running on Node.js, Express, Three.js,
 

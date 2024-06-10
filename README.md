@@ -9,8 +9,14 @@ You can download the source code file and run it from localhost using VS Code li
 
 Thank you Matt for your support and working with me on this project.
 
-Further extension:
-- Add tool tips
-- Fix the satellite orbit equation
-- Make the earth rotate around the sun
+Panning on improve:
+- Fix the satellite orbit equation.
+- Make the earth rotate around the sun.
+- Add tool tips.
 - Add more planets, make there orbit path visible.
+- Visualizing more satelltes, spacecraft, other planets satellize.
+- Add data about aesterois paths.
+- Add space debris data (get from API).
+
+Further extention:
+- Make it as server-side render visualization

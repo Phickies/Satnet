@@ -21,3 +21,6 @@ Thank you Matt for your support and working with me on this project.
 
 Further extention:
 - Make it as server-side render visualization
+
+## Credit:
+Thank you Matt for supporting and helping me in finishing the project. You are a greate person and super smart, I really love working the project with you. Also thank you for free hosting the website.
